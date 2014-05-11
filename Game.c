@@ -296,31 +296,31 @@ int getCampus (Game g, path pathToVertex) {
 }
 
 int getKPIpoints (Game g, int player) {
-    return g->universities[player].KPIpoints;
+    return g->universities[player - 1].KPIpoints;
 }
 
 int getARCs (Game g, int player) {
-    return g->universities[player].ARCs;
+    return g->universities[player - 1].ARCs;
 }
 
 int getGO8s (Game g, int player) {
-    return g->universities[player].GO8s;
+    return g->universities[player - 1].GO8s;
 }
 
 int getCampuses (Game g, int player) {
-    return g->universities[player].campuses;
+    return g->universities[player - 1].campuses;
 }
 
 int getIPs (Game g, int player) {
-    return g->universities[player].IPs;
+    return g->universities[player - 1].IPs;
 }
 
 int getPublications (Game g, int player) {
-    return g->universities[player].publications;
+    return g->universities[player - 1].publications;
 }
 
 int getStudents (Game g, int player, int discipline) {
-    return g->universities[player].students[discipline];
+    return g->universities[player - 1].students[discipline];
 }
 
 int directionToIndex(char direction) {
