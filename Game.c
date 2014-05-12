@@ -32,7 +32,6 @@ typedef struct _coordinate {
 
 typedef struct _university {
     int students[6];
-    int KPIpoints;
     int ARCs;
     int GO8s;
     int campuses;
@@ -90,7 +89,6 @@ Game newGame (int discipline[], int dice[]) {
     startScores.students[STUDENT_MJ]  = 1;
     startScores.students[STUDENT_MTV] = 1;
     startScores.students[STUDENT_MMONEY] = 1;
-    startScores.KPIpoints = 0;
     startScores.ARCs = 0;
     startScores.GO8s = 0;
     startScores.campuses = 0;
@@ -141,7 +139,6 @@ void makeAction (Game g, action a) {
         g->universities[currentPlayer].students[STUDENT_MJ] -= 1;
         g->universities[currentPlayer].students[STUDENT_MTV] -= 1;
 
-        g->universities[currentPlayer].KPIpoints += 10;
         g->universities[currentPlayer].campuses += 1;
     }
     if (a.actionCode == BUILD_GO8) {
@@ -151,7 +148,6 @@ void makeAction (Game g, action a) {
         g->universities[currentPlayer].students[STUDENT_MJ] -= 2;
         g->universities[currentPlayer].students[STUDENT_MMONEY] -= 3;
 
-        g->universities[currentPlayer].KPIpoints += 10;
         g->universities[currentPlayer].campuses -= 1;
         g->universities[currentPlayer].GO8s += 1;
     }
@@ -172,7 +168,6 @@ void makeAction (Game g, action a) {
 
         g->edges[firstVertexID][secondVertexID] = currentPlayer;
         g->universities[currentPlayer].ARCs += 1;
-        g->universities[currentPlayer].KPIpoints += 2;
     }
     if (a.actionCode == OBTAIN_PUBLICATION) {
         g->universities[currentPlayer].publications++;
@@ -207,7 +202,7 @@ void throwDice (Game g, int diceScore) {
             x = 0;
             // check all the surrounding vertices to see if
             // they belong to anyone and if they do, give the owner
-            // the stuff
+            // new students
             while (x < NUM_VERTICES_IN_A_REGION) {
                 vertexCoord = g->regions[regionID].vertices[x];
                 vertex = vertexFromCoordinate(g, vertexCoord);
@@ -237,6 +232,7 @@ int getDiceValue (Game g, int regionID) {
     return g->dice[regionID];
 }
 
+// need to account for ties
 int getMostARCs (Game g) {
     int a = g->universities[UNI_A].ARCs;
     int b = g->universities[UNI_B].ARCs;
@@ -244,6 +240,7 @@ int getMostARCs (Game g) {
     return greatestOfThree(a, b, c);
 }
 
+// need to account for ties
 int getMostPublications (Game g) {
     int a = g->universities[UNI_A].publications;
     int b = g->universities[UNI_B].publications;
@@ -296,7 +293,19 @@ int getCampus (Game g, path pathToVertex) {
 }
 
 int getKPIpoints (Game g, int player) {
-    return g->universities[player - 1].KPIpoints;
+    int KPIpoints =
+    10 * getCampuses(g, player) +
+    20 * getGO8s    (g, player) +
+     2 * getARCs    (g, player) +
+    10 * getIPs     (g, player);
+
+    if (player == getMostARCs(g)) {
+        KPIpoints += 10;
+    }
+    if (player == getMostPublications(g)) {
+        KPIpoints += 10;
+    }
+    return KPIpoints;
 }
 
 int getARCs (Game g, int player) {
