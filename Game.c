@@ -201,8 +201,7 @@ void makeAction (Game g, action a) {
         int to = a.disciplineTo;
         // if player owns a retraining center set the ratio to 2:1
         // code that later...
-        // int ratio = getExchangeRate(g, currentPlayer, from, to);
-        int ratio = 3;
+        int ratio = getExchangeRate(g, currentPlayer, from, to);
         int retrained = g->universities[currentPlayer].students[from] / ratio;
         g->universities[currentPlayer].students[from] -= retrained;
         g->universities[currentPlayer].students[to] += retrained;
@@ -587,7 +586,7 @@ int checkEdge(int player, int **edges, int verOne, int verTwo){
 // dummy functions
 int getExchangeRate (Game g, int player,
                      int disciplineFrom, int disciplineTo) {
-    return 2;
+    return 3;
 }
 
 int isLegalAction (Game g, action a) {
