@@ -8,10 +8,6 @@
 #include "Game.h"
 #include "Vertex.h"
 
-#define DEFAULT_DISCIPLINES {STUDENT_BQN, STUDENT_MMONEY, STUDENT_MJ, STUDENT_MMONEY, STUDENT_MJ, STUDENT_BPS, STUDENT_MTV, STUDENT_MTV, STUDENT_BPS,STUDENT_MTV, STUDENT_BQN, STUDENT_MJ, STUDENT_BQN, STUDENT_THD, STUDENT_MJ, STUDENT_MMONEY, STUDENT_MTV, STUDENT_BQN, STUDENT_BPS}
-
-#define DEFAULT_DICE {9,10,8,12,6,5,3,11,3,11,4,6,4,7,9,2,8,10,5}
-
 #define DOWN_RIGHT   0
 #define ACROSS_RIGHT 1
 #define UP_RIGHT     2
@@ -167,6 +163,7 @@ void makeAction (Game g, action a) {
         g->universities[currentPlayer].students[STUDENT_BQN] -= 1;
 
         g->edges[firstVertexID][secondVertexID] = currentPlayer;
+        g->edges[secondVertexID][firstVertexID] = currentPlayer;
         g->universities[currentPlayer].ARCs += 1;
     }
     if (a.actionCode == OBTAIN_PUBLICATION) {
@@ -310,6 +307,21 @@ int getKPIpoints (Game g, int player) {
 
 int getARCs (Game g, int player) {
     return g->universities[player - 1].ARCs;
+}
+
+int getARC (Game g, path pathToEdge) {
+    int pathLen = strlen(pathToEdge);
+    coordinate firstVertex = coordinateFromPath(g, pathToEdge);
+    path destinationMinusOne;
+
+    strncpy(destinationMinusOne, pathToEdge, pathLen - 1);
+    destinationMinusOne[pathLen - 1] = '\0';
+
+    coordinate secondVertex = coordinateFromPath(g, destinationMinusOne);
+    int firstVertexID = IDFromCoordinate(g, firstVertex);
+    int secondVertexID = IDFromCoordinate(g, secondVertex);
+
+    return g->edges[firstVertexID][secondVertexID];
 }
 
 int getGO8s (Game g, int player) {
@@ -546,4 +558,14 @@ int checkEdge(int player, int **edges, int verOne, int verTwo){
         count++;
     }
     return valid;
+}
+
+// dummy functions
+int getExchangeRate (Game g, int player,
+                     int disciplineFrom, int disciplineTo) {
+    return 2;
+}
+
+int isLegalAction (Game g, action a) {
+    return TRUE;
 }
