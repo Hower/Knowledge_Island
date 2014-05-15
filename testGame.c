@@ -26,9 +26,10 @@ int main(int argc, char const *argv[]) {
     // test all dice values
     int x = 2;
     while (x < 13) {
-        makeAction(g, action1);
         throwDice(g, x);
-        assert(getWhoseTurn(g) == getTurnNumber(g) % 3 + 1);
+        assert(getTurnNumber(g) == x - 2);
+        makeAction(g, action1);
+        assert(getWhoseTurn(g) == (getTurnNumber(g) % 3) + 1);
         x++;
     }
     assert(getTurnNumber(g) == 10);
