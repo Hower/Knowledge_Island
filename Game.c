@@ -6,7 +6,6 @@
 #include <math.h>
 #include <assert.h>
 #include "Game.h"
-#include "Vertex.h"
 
 #define DOWN_RIGHT   0
 #define ACROSS_RIGHT 1
