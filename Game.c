@@ -24,9 +24,6 @@
 #define MAX_COORDINATE 6
 #define NUM_VERTICES 54
 
-#define MAX_COORDINATE 6
-#define NUM_VERTICES 54
-
 #define FILE_NAME "vertices.txt"
 
 struct _vertex{
@@ -81,6 +78,7 @@ int IDFromCoordinate(Game g, coordinate coord);
 Vertex vertexFromCoordinate(Game g, coordinate coord);
 int greatestOfThree (int a, int b, int c);
 int checkEdge(int player, int **edges, int verOne, int verTwo);
+int getCampusFromCoord (Game g, coordinate coord);
 
 // int main(int argc, char const *argv[]) {
 //     int disciplines[] = DEFAULT_DISCIPLINES;
@@ -311,6 +309,11 @@ int getCampus (Game g, path pathToVertex) {
     return getContents(vertex);
 }
 
+int getCampusFromCoord (Game g, coordinate coord) {
+    Vertex vertex = vertexFromCoordinate(g, coord);
+    return getContents(vertex);
+}
+
 int getKPIpoints (Game g, int player) {
     int KPIpoints =
     10 * getCampuses(g, player) +
@@ -367,7 +370,7 @@ int getStudents (Game g, int player, int discipline) {
 }
 
 int directionToIndex(char direction) {
-    int returnValue = 0;
+    int returnValue;
     if (direction == 'L') {
         returnValue = 0;
     }
@@ -377,9 +380,13 @@ int directionToIndex(char direction) {
     else if (direction == 'B') {
         returnValue = 2;
     }
+    else {
+        returnValue = -1;
+    }
     return returnValue;
 }
 
+// also does all the checking for whether a path is valid or not
 coordinate coordinateFromPath(Game g, path requestPath) {
     int curOrientation = DOWN_RIGHT;
     char curDirection;
@@ -389,6 +396,10 @@ coordinate coordinateFromPath(Game g, path requestPath) {
     coord.z = 0;
     int count = 0;
     int pathLen = strlen(requestPath);
+    if (pathLen > PATH_LIMIT) {
+        coord.x = -1;
+        return coord;
+    }
     int orientationTable[6][3][2] = {
         {
             {X, ACROSS_RIGHT},
@@ -428,6 +439,13 @@ coordinate coordinateFromPath(Game g, path requestPath) {
     while (count < pathLen) {
         curDirection = requestPath[count];
         index = directionToIndex(curDirection);
+
+        // path contains a letter other than L R or B
+        if (index == -1) {
+            coord.x = -1;
+            return coord;
+        }
+
         updateCoord = orientationTable[curOrientation][index][0];
 
         if (updateCoord > 0) {
@@ -452,13 +470,20 @@ coordinate coordinateFromPath(Game g, path requestPath) {
         z = coord.z;
         printf("%d %d %d\n", x, y, z);
         curVertex = g->map[x][y][z];
-        assert(getID(curVertex) != -1);
-        assert(x < MAX_COORDINATE);
-        assert(y < MAX_COORDINATE);
-        assert(z < MAX_COORDINATE);
-        assert(x >= 0);
-        assert(y >= 0);
-        assert(z >= 0);
+
+        // path is out of bounds or doesn't exist
+        if (
+           (getID(curVertex) == -1)
+           || (x >= MAX_COORDINATE)
+           || (y >= MAX_COORDINATE)
+           || (z >= MAX_COORDINATE)
+           || (x < 0)
+           || (y < 0)
+           || (z < 0)) {
+            coord.x = -1;
+            return coord;
+        }
+
         curOrientation = orientationTable[curOrientation][index][1];
         count++;
     }
@@ -582,14 +607,98 @@ int checkEdge(int player, int **edges, int verOne, int verTwo){
     return valid;
 }
 
+// A1 (2, 0, 1) (1, 0, 1) STUDENT_MTV
+// A2 (3, 1, 0) (4, 1, 0) STUDENT_MMONEY
+// B1 (5, 4, 1) (5, 4, 2) STUDENT_BQN
+// B2 (4, 5, 3) (4, 5, 4) STUDENT_MJ
+// C1 (1, 4, 5) (1, 3, 5) STUDENT_BPS
+
 // dummy functions
 int getExchangeRate (Game g, int player,
                      int disciplineFrom, int disciplineTo) {
+    coordinate MTV1    = {2, 0, 1};
+    coordinate MTV2    = {1, 0, 1};
+    coordinate MMONEY1 = {3, 1, 0};
+    coordinate MMONEY2 = {4, 1, 0};
+    coordinate BQN1    = {5, 4, 1};
+    coordinate BQN2    = {5, 4, 2};
+    coordinate MJ1     = {4, 5, 3};
+    coordinate MJ2     = {4, 5, 4};
+    coordinate BPS1    = {1, 4, 5};
+    coordinate BPS2    = {1, 3, 5};
+
+    if (disciplineFrom == STUDENT_MTV) {
+        if (getCampusFromCoord(g, MTV1) == player ||
+            getCampusFromCoord(g, MTV1) == player + 3 ||
+            getCampusFromCoord(g, MTV2) == player ||
+            getCampusFromCoord(g, MTV2) == player + 3) {
+            return 2;
+        }
+    }
+    else if (disciplineFrom == STUDENT_MMONEY) {
+        if (getCampusFromCoord(g, MMONEY1) == player ||
+            getCampusFromCoord(g, MMONEY1) == player + 3 ||
+            getCampusFromCoord(g, MMONEY2) == player ||
+            getCampusFromCoord(g, MMONEY2) == player + 3) {
+            return 2;
+        }
+    }
+    else if (disciplineFrom == STUDENT_BQN) {
+        if (getCampusFromCoord(g, BQN1) == player ||
+            getCampusFromCoord(g, BQN1) == player + 3 ||
+            getCampusFromCoord(g, BQN2) == player ||
+            getCampusFromCoord(g, BQN2) == player + 3) {
+            return 2;
+        }
+    }
+    else if (disciplineFrom == STUDENT_MJ) {
+        if (getCampusFromCoord(g, MJ1) == player ||
+            getCampusFromCoord(g, MJ1) == player + 3 ||
+            getCampusFromCoord(g, MJ2) == player ||
+            getCampusFromCoord(g, MJ2) == player + 3) {
+            return 2;
+        }
+    }
+    else if (disciplineFrom == STUDENT_BPS) {
+        if (getCampusFromCoord(g, BPS1) == player ||
+            getCampusFromCoord(g, BPS1) == player + 3 ||
+            getCampusFromCoord(g, BPS2) == player ||
+            getCampusFromCoord(g, BPS2) == player + 3) {
+            return 2;
+        }
+    }
     return 3;
 }
 
 int isLegalAction (Game g, action a) {
-    return TRUE;
+    // action is out of bounds
+    if (a.actionCode == PASS) {
+        return TRUE;
+    }
+    if (a.actionCode < PASS || a.actionCode > RETRAIN_STUDENTS) {
+        return FALSE;
+    }
+    if (a.actionCode == OBTAIN_PUBLICATION
+        || a.actionCode == OBTAIN_IP_PATENT) {
+        return FALSE;
+    }
+    if (a.actionCode == BUILD_CAMPUS || a.actionCode == BUILD_GO8 ||
+        a.actionCode == OBTAIN_ARC) {
+        coordinate coord = coordinateFromPath(g, a.destination);
+        if (coord.x == -1) {
+            return FALSE;
+        }
+    }
+    if (a.actionCode == RETRAIN_STUDENTS) {
+        if (a.disciplineFrom < 1 || a.disciplineFrom > 5) {
+            return FALSE;
+        }
+        if (a.disciplineTo < 0 || a.disciplineTo > 5) {
+            return FALSE;
+        }
+        if ()
+    }
+
 }
 ////
 
