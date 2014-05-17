@@ -79,6 +79,7 @@ Vertex vertexFromCoordinate(Game g, coordinate coord);
 int greatestOfThree (int a, int b, int c);
 int checkEdge(int player, int **edges, int verOne, int verTwo);
 int getCampusFromCoord (Game g, coordinate coord);
+int isLegalCoordinate (Game g, coordinate coord);
 
 // int main(int argc, char const *argv[]) {
 //     int disciplines[] = DEFAULT_DISCIPLINES;
@@ -469,17 +470,21 @@ coordinate coordinateFromPath(Game g, path requestPath) {
         y = coord.y;
         z = coord.z;
         printf("%d %d %d\n", x, y, z);
-        curVertex = g->map[x][y][z];
 
         // path is out of bounds or doesn't exist
         if (
-           (getID(curVertex) == -1)
-           || (x >= MAX_COORDINATE)
+              (x >= MAX_COORDINATE)
            || (y >= MAX_COORDINATE)
            || (z >= MAX_COORDINATE)
            || (x < 0)
            || (y < 0)
            || (z < 0)) {
+            coord.x = -1;
+            return coord;
+        }
+
+        curVertex = g->map[x][y][z];
+        if (getID(curVertex) == -1) {
             coord.x = -1;
             return coord;
         }
@@ -672,6 +677,7 @@ int getExchangeRate (Game g, int player,
 
 int isLegalAction (Game g, action a) {
     // action is out of bounds
+    int player = getWhoseTurn(g);
     if (a.actionCode == PASS) {
         return TRUE;
     }
@@ -688,6 +694,64 @@ int isLegalAction (Game g, action a) {
         if (coord.x == -1) {
             return FALSE;
         }
+        if (getCampusFromCoord(g, coord) != VACANT_VERTEX) {
+            return FALSE;
+        }
+        // test adjacent vertices
+        coordinate test1 = {coord.x + 1, coord.y, coord.z};
+        coordinate test2 = {coord.x - 1, coord.y, coord.z};
+        coordinate test3 = {coord.x, coord.y + 1, coord.z};
+        coordinate test4 = {coord.x, coord.y - 1, coord.z};
+        coordinate test5 = {coord.x, coord.y, coord.z + 1};
+        coordinate test6 = {coord.x, coord.y, coord.z - 1};
+        if (isLegalCoordinate(g, test1) == TRUE) {
+            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test1)] != player) {
+                return FALSE;
+            }
+            if (getCampusFromCoord(g, test1) != VACANT_VERTEX) {
+                return FALSE;
+            }
+        }
+        if (isLegalCoordinate(g, test2) == TRUE) {
+            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test2)] != player) {
+                return FALSE;
+            }
+            if (getCampusFromCoord(g, test2) != VACANT_VERTEX) {
+                return FALSE;
+            }
+        }
+        if (isLegalCoordinate(g, test3) == TRUE) {
+            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test3)] != player) {
+                return FALSE;
+            }
+            if (getCampusFromCoord(g, test3) != VACANT_VERTEX) {
+                return FALSE;
+            }
+        }
+        if (isLegalCoordinate(g, test4) == TRUE) {
+            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test4)] != player) {
+                return FALSE;
+            }
+            if (getCampusFromCoord(g, test4) != VACANT_VERTEX) {
+                return FALSE;
+            }
+        }
+        if (isLegalCoordinate(g, test5) == TRUE) {
+            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test5)] != player) {
+                return FALSE;
+            }
+            if (getCampusFromCoord(g, test5) != VACANT_VERTEX) {
+                return FALSE;
+            }
+        }
+        if (isLegalCoordinate(g, test6) == TRUE) {
+            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test6)] != player) {
+                return FALSE;
+            }
+            if (getCampusFromCoord(g, test6) != VACANT_VERTEX) {
+                return FALSE;
+            }
+        }
     }
     if (a.actionCode == RETRAIN_STUDENTS) {
         if (a.disciplineFrom < 1 || a.disciplineFrom > 5) {
@@ -696,11 +760,34 @@ int isLegalAction (Game g, action a) {
         if (a.disciplineTo < 0 || a.disciplineTo > 5) {
             return FALSE;
         }
-        if ()
+        if (getStudents(g, player, a.disciplineFrom) <
+            getExchangeRate(g, player, a.disciplineFrom, a.disciplineTo)) {
+            return FALSE;
+        }
     }
-
+    return TRUE;
 }
 ////
+
+int isLegalCoordinate (Game g, coordinate coord) {
+    int x = coord.x;
+    int y = coord.y;
+    int z = coord.z;
+    if (
+          (x >= MAX_COORDINATE)
+       || (y >= MAX_COORDINATE)
+       || (z >= MAX_COORDINATE)
+       || (x < 0)
+       || (y < 0)
+       || (z < 0)) {
+        return FALSE;
+    }
+    Vertex vertex = g->map[x][y][z];
+    if (getID(vertex) == -1) {
+        return FALSE;
+    }
+    return TRUE;
+}
 
 Vertex*** makeVertexMap(void){
 
