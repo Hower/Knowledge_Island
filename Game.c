@@ -24,6 +24,8 @@
 #define MAX_COORDINATE 6
 #define NUM_VERTICES 54
 
+#define NUM_DIRECTIONS_FROM_ANY_VERTEX 6
+#define TERRA_NULLIS -1
 #define FILE_NAME "vertices.txt"
 
 struct _vertex{
@@ -80,6 +82,8 @@ int greatestOfThree (int a, int b, int c);
 int checkEdge(int player, int **edges, int verOne, int verTwo);
 int getCampusFromCoord (Game g, coordinate coord);
 int isLegalCoordinate (Game g, coordinate coord);
+int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
+void spawnStartingCampuses (Game g);
 
 // int main(int argc, char const *argv[]) {
 //     int disciplines[] = DEFAULT_DISCIPLINES;
@@ -109,7 +113,7 @@ Game newGame (int discipline[], int dice[]) {
     startScores.students[STUDENT_MMONEY] = 1;
     startScores.ARCs = 0;
     startScores.GO8s = 0;
-    startScores.campuses = 0;
+    startScores.campuses = 2;
     startScores.IPs = 0;
     startScores.publications = 0;
     x = 0;
@@ -135,6 +139,7 @@ Game newGame (int discipline[], int dice[]) {
         x++;
     }
     g->edges = makeEdgeMap(g->map);
+    spawnStartingCampuses(g);
     return g;
 }
 
@@ -142,6 +147,14 @@ void disposeGame (Game g) {
     free(g);
 }
 
+void spawnStartingCampuses (Game g) {
+    changeContents(g->map[2][0][0], CAMPUS_A);
+    changeContents(g->map[3][5][5], CAMPUS_A);
+    changeContents(g->map[5][5][2], CAMPUS_B);
+    changeContents(g->map[0][0][3], CAMPUS_B);
+    changeContents(g->map[0][3][5], CAMPUS_C);
+    changeContents(g->map[5][2][0], CAMPUS_C);
+}
 void makeAction (Game g, action a) {
     // arrays are indexed from 0
     int currentPlayer = getWhoseTurn(g) - 1;
@@ -240,6 +253,16 @@ void throwDice (Game g, int diceScore) {
             }
         }
         regionID++;
+    }
+    if (diceScore == 7) {
+        player = 0;
+        while (player < NUM_UNIS) {
+            g->universities[player].students[STUDENT_THD] += getStudents(g, player, STUDENT_MMONEY);
+            g->universities[player].students[STUDENT_MMONEY] = 0;
+            g->universities[player].students[STUDENT_THD] += getStudents(g, player, STUDENT_MJ);
+            g->universities[player].students[STUDENT_MJ] = 0;
+            player++;
+        }
     }
 }
 
@@ -612,13 +635,13 @@ int checkEdge(int player, int **edges, int verOne, int verTwo){
     return valid;
 }
 
+// training centers
 // A1 (2, 0, 1) (1, 0, 1) STUDENT_MTV
 // A2 (3, 1, 0) (4, 1, 0) STUDENT_MMONEY
 // B1 (5, 4, 1) (5, 4, 2) STUDENT_BQN
 // B2 (4, 5, 3) (4, 5, 4) STUDENT_MJ
 // C1 (1, 4, 5) (1, 3, 5) STUDENT_BPS
 
-// dummy functions
 int getExchangeRate (Game g, int player,
                      int disciplineFrom, int disciplineTo) {
     coordinate MTV1    = {2, 0, 1};
@@ -676,6 +699,10 @@ int getExchangeRate (Game g, int player,
 }
 
 int isLegalAction (Game g, action a) {
+    int x = 0;
+    if (getTurnNumber(g) == TERRA_NULLIS)  {
+        return FALSE;
+    }
     // action is out of bounds
     int player = getWhoseTurn(g);
     if (a.actionCode == PASS) {
@@ -694,70 +721,98 @@ int isLegalAction (Game g, action a) {
         if (coord.x == -1) {
             return FALSE;
         }
-        if (getCampusFromCoord(g, coord) != VACANT_VERTEX) {
-            return FALSE;
-        }
-        // test adjacent vertices
-        coordinate test1 = {coord.x + 1, coord.y, coord.z};
-        coordinate test2 = {coord.x - 1, coord.y, coord.z};
-        coordinate test3 = {coord.x, coord.y + 1, coord.z};
-        coordinate test4 = {coord.x, coord.y - 1, coord.z};
-        coordinate test5 = {coord.x, coord.y, coord.z + 1};
-        coordinate test6 = {coord.x, coord.y, coord.z - 1};
-        if (isLegalCoordinate(g, test1) == TRUE) {
-            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test1)] != player) {
+        if (a.actionCode == BUILD_CAMPUS || a.actionCode == BUILD_GO8) {
+            // test they're building on an empty vertex
+            if (getCampusFromCoord(g, coord) != VACANT_VERTEX) {
                 return FALSE;
             }
-            if (getCampusFromCoord(g, test1) != VACANT_VERTEX) {
-                return FALSE;
+            // test adjacent vertices and edges
+            coordinate test1 = {coord.x + 1, coord.y, coord.z};
+            coordinate test2 = {coord.x - 1, coord.y, coord.z};
+            coordinate test3 = {coord.x, coord.y + 1, coord.z};
+            coordinate test4 = {coord.x, coord.y - 1, coord.z};
+            coordinate test5 = {coord.x, coord.y, coord.z + 1};
+            coordinate test6 = {coord.x, coord.y, coord.z - 1};
+            coordinate testCoords[NUM_DIRECTIONS_FROM_ANY_VERTEX] =
+                       {test1, test2, test3, test4, test5, test6};
+            int arcOwned = FALSE;
+            x = 0;
+            while (x < NUM_DIRECTIONS_FROM_ANY_VERTEX) {
+                if (isLegalCoordinate(g, testCoords[x]) == TRUE) {
+                    if (getARCFromCoords(g, coord, testCoords[x]) == player) {
+                        arcOwned = TRUE;
+                    }
+                    if (getCampusFromCoord(g, testCoords[x]) != VACANT_VERTEX) {
+                        return FALSE;
+                    }
+                }
+                x++;
             }
-        }
-        if (isLegalCoordinate(g, test2) == TRUE) {
-            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test2)] != player) {
-                return FALSE;
-            }
-            if (getCampusFromCoord(g, test2) != VACANT_VERTEX) {
-                return FALSE;
-            }
-        }
-        if (isLegalCoordinate(g, test3) == TRUE) {
-            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test3)] != player) {
-                return FALSE;
-            }
-            if (getCampusFromCoord(g, test3) != VACANT_VERTEX) {
+            // if no adjacment edges are owned by the player
+            if (arcOwned == FALSE) {
                 return FALSE;
             }
         }
-        if (isLegalCoordinate(g, test4) == TRUE) {
-            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test4)] != player) {
+        else { // action must be OBTAIN_ARC
+            if (getARC(g, a.destination) != VACANT_ARC) {
                 return FALSE;
             }
-            if (getCampusFromCoord(g, test4) != VACANT_VERTEX) {
-                return FALSE;
-            }
-        }
-        if (isLegalCoordinate(g, test5) == TRUE) {
-            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test5)] != player) {
-                return FALSE;
-            }
-            if (getCampusFromCoord(g, test5) != VACANT_VERTEX) {
-                return FALSE;
-            }
-        }
-        if (isLegalCoordinate(g, test6) == TRUE) {
-            if (g->edges[IDFromCoordinate(g, coord)][IDFromCoordinate(g, test6)] != player) {
-                return FALSE;
-            }
-            if (getCampusFromCoord(g, test6) != VACANT_VERTEX) {
-                return FALSE;
+            // obtain the two edges that make up the vertex
+            int pathLen = strlen(a.destination);
+            coordinate firstVertex = coordinateFromPath(g, a.destination);
+            path destinationMinusOne;
+
+            strncpy(destinationMinusOne, a.destination, pathLen - 1);
+            destinationMinusOne[pathLen - 1] = '\0';
+
+            coordinate secondVertex = coordinateFromPath(g, destinationMinusOne);
+            // if we don't own any campuses connecting to the edge then we must
+            // have an ARC connected to this edge for us to build
+            // checks all surrounding edges to see if any of them are owned by us
+            if (getCampus(g, a.destination) != player || getCampus(g, destinationMinusOne) != player ||
+                getCampus(g, a.destination) != player + 3 || getCampus(g, destinationMinusOne) != player +3) {
+                coordinate test1 = {firstVertex.x + 1, firstVertex.y, firstVertex.z};
+                coordinate test2 = {firstVertex.x - 1, firstVertex.y, firstVertex.z};
+                coordinate test3 = {firstVertex.x, firstVertex.y + 1, firstVertex.z};
+                coordinate test4 = {firstVertex.x, firstVertex.y - 1, firstVertex.z};
+                coordinate test5 = {firstVertex.x, firstVertex.y, firstVertex.z + 1};
+                coordinate test6 = {firstVertex.x, firstVertex.y, firstVertex.z - 1};
+
+                coordinate test7  = {secondVertex.x + 1, secondVertex.y, secondVertex.z};
+                coordinate test8  = {secondVertex.x - 1, secondVertex.y, secondVertex.z};
+                coordinate test9  = {secondVertex.x, secondVertex.y + 1, secondVertex.z};
+                coordinate test10 = {secondVertex.x, secondVertex.y - 1, secondVertex.z};
+                coordinate test11 = {secondVertex.x, secondVertex.y, secondVertex.z + 1};
+                coordinate test12 = {secondVertex.x, secondVertex.y, secondVertex.z - 1};
+
+                coordinate testCoords[NUM_DIRECTIONS_FROM_ANY_VERTEX * 2] =
+                           {test1, test2, test3, test4, test5, test6, test7, test8, test9,
+                            test10, test11, test12};
+                x = 0;
+                int arcOwned = FALSE;
+                while (x < NUM_DIRECTIONS_FROM_ANY_VERTEX * 2) {
+                    if (isLegalCoordinate(g, testCoords[x]) == TRUE) {
+                        if (getARCFromCoords(g, coord, testCoords[x]) == player) {
+                            arcOwned = TRUE;
+                            break;
+                        }
+                    }
+                    x++;
+                }
+                if (arcOwned == FALSE) {
+                    return FALSE;
+                }
+
             }
         }
     }
+    // check we have the required number of students
     if (a.actionCode == RETRAIN_STUDENTS) {
-        if (a.disciplineFrom < 1 || a.disciplineFrom > 5) {
+        // check that that type of student exists
+        if (a.disciplineFrom < STUDENT_BPS || a.disciplineFrom > STUDENT_MMONEY) {
             return FALSE;
         }
-        if (a.disciplineTo < 0 || a.disciplineTo > 5) {
+        if (a.disciplineTo < STUDENT_THD || a.disciplineTo > STUDENT_MMONEY) {
             return FALSE;
         }
         if (getStudents(g, player, a.disciplineFrom) <
@@ -765,9 +820,43 @@ int isLegalAction (Game g, action a) {
             return FALSE;
         }
     }
+    if (a.actionCode == BUILD_CAMPUS) {
+        if (getStudents(g, player, STUDENT_BPS) < 1 ||
+            getStudents(g, player, STUDENT_BQN) < 1 ||
+            getStudents(g, player, STUDENT_MJ) < 1 ||
+            getStudents(g, player, STUDENT_MTV < 1)) {
+            return FALSE;
+        }
+    }
+    if (a.actionCode == BUILD_GO8) {
+        if (getStudents(g, player, STUDENT_MJ) < 2 ||
+            getStudents(g, player, STUDENT_MMONEY < 3)) {
+            return FALSE;
+        }
+        int totalGO8s = 0;
+        x = 1;
+        while (x <= NUM_UNIS) {
+            totalGO8s += getGO8s(g, player);
+            x++;
+        }
+        if (totalGO8s >= 8) {
+            return FALSE;
+        }
+    }
+    if (a.actionCode == OBTAIN_ARC) {
+        if (getStudents(g, player, STUDENT_BPS) < 1 ||
+            getStudents(g, player, STUDENT_BQN) < 1) {
+            return FALSE;
+        }
+    }
+
     return TRUE;
 }
 ////
+
+int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2) {
+    return g->edges[IDFromCoordinate(g, vertex1)][IDFromCoordinate(g, vertex2)];
+}
 
 int isLegalCoordinate (Game g, coordinate coord) {
     int x = coord.x;
