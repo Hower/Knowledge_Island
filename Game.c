@@ -210,12 +210,9 @@ void makeAction (Game g, action a) {
     if (a.actionCode == RETRAIN_STUDENTS) {
         int from = a.disciplineFrom;
         int to = a.disciplineTo;
-        // if player owns a retraining center set the ratio to 2:1
-        // code that later...
         int ratio = getExchangeRate(g, currentPlayer, from, to);
-        int retrained = g->universities[currentPlayer].students[from] / ratio;
-        g->universities[currentPlayer].students[from] -= retrained;
-        g->universities[currentPlayer].students[to] += retrained;
+        g->universities[currentPlayer].students[from] -= ratio;
+        g->universities[currentPlayer].students[to] += 1;
 
     }
 }
@@ -291,9 +288,6 @@ int getMostPublications (Game g) {
 
 int greatestOfThree (int a, int b, int c) {
     int leading = NO_ONE;
-    if (a == 0 && b == 0 && c == 0) {
-        leading = NO_ONE;
-    }
 
     if (a > b) {
         if (a > c) {
@@ -308,6 +302,10 @@ int greatestOfThree (int a, int b, int c) {
     }
     else {
         leading = UNI_C;
+    }
+
+    if (a == 0 && b == 0 && c == 0) {
+        leading = NO_ONE;
     }
     return leading;
 }
@@ -852,7 +850,6 @@ int isLegalAction (Game g, action a) {
 
     return TRUE;
 }
-////
 
 int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2) {
     return g->edges[IDFromCoordinate(g, vertex1)][IDFromCoordinate(g, vertex2)];
