@@ -68,26 +68,23 @@ struct _game {
     int mostARCs;
 };
 
-Vertex*** makeVertexMap(void);
+static Vertex*** makeVertexMap(void);
 
-int getID(Vertex vertex);
-int getContents(Vertex vertex);
-int changeContents(Vertex vertex, int newElement);
-void freeMap(Vertex*** map);
+static int getID(Vertex vertex);
+static int getContents(Vertex vertex);
+static int changeContents(Vertex vertex, int newElement);
+static void freeMap(Vertex*** map);
 
-int sizeOfVertex(void);
-
-int directionToIndex(char direction);
-coordinate coordinateFromPath(Game g, path requestPath);
-int** makeEdgeMap(Vertex ***vertices);
-int IDFromCoordinate(Game g, coordinate coord);
-Vertex vertexFromCoordinate(Game g, coordinate coord);
-int greatestOfThree (int a, int b, int c);
-int checkEdge(int player, int **edges, int verOne, int verTwo);
-int getCampusFromCoord (Game g, coordinate coord);
-int isLegalCoordinate (Game g, coordinate coord);
-int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
-void spawnStartingCampuses (Game g);
+static int directionToIndex(char direction);
+static coordinate coordinateFromPath(Game g, path requestPath);
+static int** makeEdgeMap(Vertex ***vertices);
+static int IDFromCoordinate(Game g, coordinate coord);
+static Vertex vertexFromCoordinate(Game g, coordinate coord);
+// static int checkEdge(int player, int **edges, int verOne, int verTwo);
+static int getCampusFromCoord (Game g, coordinate coord);
+static int isLegalCoordinate (Game g, coordinate coord);
+static int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
+static void spawnStartingCampuses (Game g);
 
 // int main(int argc, char const *argv[]) {
 //     int disciplines[] = DEFAULT_DISCIPLINES;
@@ -157,10 +154,11 @@ Game newGame (int discipline[], int dice[]) {
 }
 
 void disposeGame (Game g) {
+    freeMap(g->map);
     free(g);
 }
 
-void spawnStartingCampuses (Game g) {
+static void spawnStartingCampuses (Game g) {
     changeContents(g->map[2][0][0], CAMPUS_A);
     changeContents(g->map[3][5][5], CAMPUS_A);
     changeContents(g->map[5][5][2], CAMPUS_B);
@@ -326,7 +324,7 @@ int getCampus (Game g, path pathToVertex) {
     return getContents(vertex);
 }
 
-int getCampusFromCoord (Game g, coordinate coord) {
+static int getCampusFromCoord (Game g, coordinate coord) {
     Vertex vertex = vertexFromCoordinate(g, coord);
     return getContents(vertex);
 }
@@ -387,7 +385,7 @@ int getStudents (Game g, int player, int discipline) {
 }
 
 // returns -1 if requested direction is not 'L' 'B' or 'R'
-int directionToIndex(char direction) {
+static int directionToIndex(char direction) {
     int returnValue;
     if (direction == 'L') {
         returnValue = 0;
@@ -405,7 +403,7 @@ int directionToIndex(char direction) {
 }
 
 // if a path is invalid, the returned x coordinate will be -1
-coordinate coordinateFromPath(Game g, path requestPath) {
+static coordinate coordinateFromPath(Game g, path requestPath) {
     int curOrientation = DOWN_RIGHT;
     char curDirection;
     coordinate coord;
@@ -492,15 +490,15 @@ coordinate coordinateFromPath(Game g, path requestPath) {
     return coord;
 }
 
-int IDFromCoordinate(Game g, coordinate coord) {
+static int IDFromCoordinate(Game g, coordinate coord) {
     return getID(vertexFromCoordinate(g, coord));
 }
 
-Vertex vertexFromCoordinate(Game g, coordinate coord) {
+static Vertex vertexFromCoordinate(Game g, coordinate coord) {
     return g->map[coord.x][coord.y][coord.z];
 }
 
-int** makeEdgeMap(Vertex ***vertices){
+static int** makeEdgeMap(Vertex ***vertices){
     int **first = malloc(sizeof(int*) * NUM_VERTICES);
 
     int d = 0;
@@ -588,23 +586,23 @@ int** makeEdgeMap(Vertex ***vertices){
     return first;
 }
 
-int checkEdge(int player, int **edges, int verOne, int verTwo){
-    int valid = 0;
+// static int checkEdge(int player, int **edges, int verOne, int verTwo){
+//     int valid = 0;
 
-    //loops over the array that has one vertex in common with the one
-    //in question
-    int count = 0;
-    while(count < MAX_COORDINATE){
-        if(edges[verOne][count] == player){
-            valid = 1;
-        }
-        if(edges[verTwo][count] == player){
-            valid = 1;
-        }
-        count++;
-    }
-    return valid;
-}
+//     //loops over the array that has one vertex in common with the one
+//     //in question
+//     int count = 0;
+//     while(count < MAX_COORDINATE){
+//         if(edges[verOne][count] == player){
+//             valid = 1;
+//         }
+//         if(edges[verTwo][count] == player){
+//             valid = 1;
+//         }
+//         count++;
+//     }
+//     return valid;
+// }
 
 int getExchangeRate (Game g, int player,
                      int disciplineFrom, int disciplineTo) {
@@ -818,11 +816,11 @@ int isLegalAction (Game g, action a) {
     return TRUE;
 }
 
-int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2) {
+static int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2) {
     return g->edges[IDFromCoordinate(g, vertex1)][IDFromCoordinate(g, vertex2)];
 }
 
-int isLegalCoordinate (Game g, coordinate coord) {
+static int isLegalCoordinate (Game g, coordinate coord) {
     int x = coord.x;
     int y = coord.y;
     int z = coord.z;
@@ -842,7 +840,7 @@ int isLegalCoordinate (Game g, coordinate coord) {
     return TRUE;
 }
 
-Vertex*** makeVertexMap(void){
+static Vertex*** makeVertexMap(void){
     char *VERTICES = "2 0 0\n3 0 0\n1 0 1\n2 0 1\n3 1 0\n4 1 0\n0 0 2\n1 0 2\n2 1 1\n3 1 1\n4 2 0\n5 2 0\n0 0 3\n1 1 2\n2 1 2\n3 2 1\n4 2 1\n5 3 0\n0 1 3\n1 1 3\n2 2 2\n3 2 2\n4 3 1\n5 3 1\n0 1 4\n1 2 3\n2 2 3\n3 3 2\n4 3 2\n5 4 1\n0 2 4\n1 2 4\n2 3 3\n3 3 3\n4 4 2\n5 4 2\n0 2 5\n1 3 4\n2 3 4\n3 4 3\n4 4 3\n5 5 2\n0 3 5\n1 3 5\n2 4 4\n3 4 4\n4 5 3\n5 5 3\n1 4 5\n2 4 5\n3 5 4\n4 5 4\n2 5 5\n3 5 5";
     FILE * fin;
     fin = tmpfile();
@@ -890,19 +888,19 @@ Vertex*** makeVertexMap(void){
     return first;
 }
 
-int getID(Vertex vertex) {
+static int getID(Vertex vertex){
     return vertex->ID;
 }
 
-int getContents(Vertex vertex) {
+static int getContents(Vertex vertex){
     return vertex->contents;
 }
 
-int changeContents(Vertex vertex, int newElement) {
+static int changeContents(Vertex vertex, int newElement){
     return vertex->contents = newElement;
 }
 
-void freeMap(Vertex*** map) {
+static void freeMap(Vertex*** map){
     int countA = 0;
 
     while (countA < MAX_COORDINATE){
@@ -923,8 +921,4 @@ void freeMap(Vertex*** map) {
     }
     free(map);
     return;
-}
-
-int sizeOfVertex(void) {
-    return sizeof(struct _vertex);
 }
