@@ -124,12 +124,19 @@ Game newGame (int discipline[], int dice[]) {
     g->map = makeVertexMap();
     x = 0;
     i = 0;
+
     // load in the regions and their associated vertices
-    FILE *fin = fopen(REGIONS_TXT, "r");
+    char *REGIONS = "0 0 2\n0 0 3\n0 1 3\n1 0 2\n1 1 2\n1 1 3\n0 1 3\n1 1 3\n0 1 4\n1 2 3\n0 2 4\n1 2 4\n0 2 4\n1 2 4\n0 2 5\n1 3 4\n0 3 5\n1 3 5\n1 0 1\n2 0 1\n1 0 2\n2 1 1\n1 1 2\n2 1 2\n1 1 2\n2 1 2\n1 1 3\n2 2 2\n1 2 3\n2 2 3\n1 2 3\n2 2 3\n1 2 4\n2 3 3\n1 3 4\n2 3 4\n1 3 4\n2 3 4\n1 3 5\n2 4 4\n1 4 5\n2 4 5\n2 0 0\n3 0 0\n2 0 1\n3 1 0\n2 1 1\n3 1 1\n2 1 1\n3 1 1\n2 1 2\n3 2 1\n2 2 2\n3 2 2\n2 2 2\n3 2 2\n2 2 3\n3 3 2\n2 3 3\n3 3 3\n2 3 3\n3 3 3\n2 3 4\n3 4 3\n2 4 4\n3 4 4\n2 4 4\n3 4 4\n2 4 5\n3 5 4\n2 5 5\n3 5 5\n3 1 0\n4 1 0\n3 1 1\n4 2 0\n3 2 1\n4 2 1\n3 2 1\n4 2 1\n3 2 2\n4 3 1\n3 3 2\n4 3 2\n3 3 2\n4 3 2\n3 3 3\n4 4 2\n3 4 3\n4 4 3\n3 4 3\n4 4 3\n3 4 4\n4 5 3\n3 5 4\n4 5 4\n4 2 0\n5 2 0\n4 2 1\n5 3 0\n4 3 1\n5 3 1\n4 3 1\n5 3 1\n4 3 2\n5 4 1\n4 4 2\n5 4 2\n4 4 2\n5 4 2\n4 4 3\n5 5 2\n4 5 3\n5 5 3";
+    FILE * pFile;
+    pFile = tmpfile();
+    if (pFile == NULL) printf("Regions file could not be loaded\n");
+    fputs(REGIONS, pFile);
+    rewind(pFile);
+
     while (x < NUM_REGIONS) {
         g->regions[x].ID = x;
         while (i < NUM_VERTICES_IN_A_REGION) {
-            fscanf(fin, "%d %d %d",
+            fscanf(pFile, "%d %d %d",
                 &(g->regions[x].vertices[i].x),
                 &(g->regions[x].vertices[i].y),
                 &(g->regions[x].vertices[i].z));
@@ -877,7 +884,13 @@ int isLegalCoordinate (Game g, coordinate coord) {
 
 Vertex*** makeVertexMap(void){
 
-    FILE *fin = fopen(FILE_NAME, "r");
+    char *VERTICES = "2 0 0\n3 0 0\n1 0 1\n2 0 1\n3 1 0\n4 1 0\n0 0 2\n1 0 2\n2 1 1\n3 1 1\n4 2 0\n5 2 0\n0 0 3\n1 1 2\n2 1 2\n3 2 1\n4 2 1\n5 3 0\n0 1 3\n1 1 3\n2 2 2\n3 2 2\n4 3 1\n5 3 1\n0 1 4\n1 2 3\n2 2 3\n3 3 2\n4 3 2\n5 4 1\n0 2 4\n1 2 4\n2 3 3\n3 3 3\n4 4 2\n5 4 2\n0 2 5\n1 3 4\n2 3 4\n3 4 3\n4 4 3\n5 5 2\n0 3 5\n1 3 5\n2 4 4\n3 4 4\n4 5 3\n5 5 3\n1 4 5\n2 4 5\n3 5 4\n4 5 4\n2 5 5\n3 5 5";
+    FILE * fin;
+    fin = tmpfile();
+    if (fin == NULL) printf("Vertices file could not be loadedk\n");
+    fputs(VERTICES, fin);
+    rewind(fin);
+
     Vertex ***first = malloc(sizeof(Vertex**) * MAX_COORDINATE);
 
     // Creates blank map
@@ -959,3 +972,4 @@ void freeMap(Vertex*** map){
 int sizeOfVertex(void){
     return sizeof(struct _vertex);
 }
+
