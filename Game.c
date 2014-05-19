@@ -86,15 +86,6 @@ static int isLegalCoordinate (Game g, coordinate coord);
 static int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
 static void spawnStartingCampuses (Game g);
 
-// int main(int argc, char const *argv[]) {
-//     int disciplines[] = DEFAULT_DISCIPLINES;
-//     int dice[] = DEFAULT_DICE;
-//     Game g = newGame (disciplines, dice);
-//     coordinate coord = coordinateFromPath(g, "LRRLRR");
-//     printf("(%d, %d, %d)\n", coord.x, coord.y, coord.z);
-//     return EXIT_SUCCESS;
-// }
-
 Game newGame (int discipline[], int dice[]) {
     Game g = malloc(sizeof(struct _game));
     // populate the map
