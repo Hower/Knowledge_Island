@@ -72,7 +72,7 @@ static Vertex*** makeVertexMap(void);
 
 static int getID(Vertex vertex);
 static int getContents(Vertex vertex);
-static int changeContents(Vertex vertex, int newElement);
+static void changeContents(Vertex vertex, int newElement);
 static void freeMap(Vertex*** map);
 
 static int directionToIndex(char direction);
@@ -160,30 +160,30 @@ static void spawnStartingCampuses (Game g) {
 
 void makeAction (Game g, action a) {
     // arrays are indexed from 0
-    int currentPlayer = getWhoseTurn(g) - 1;
+    int playerIndex = getWhoseTurn(g) - 1;
+    int currentPlayer = getWhoseTurn(g);
     if (a.actionCode == PASS) {
         return;
     }
     if (a.actionCode == BUILD_CAMPUS) {
         coordinate coord = coordinateFromPath(g, a.destination);
         changeContents(vertexFromCoordinate(g, coord), currentPlayer);
+        g->universities[playerIndex].students[STUDENT_BPS] -= 1;
+        g->universities[playerIndex].students[STUDENT_BQN] -= 1;
+        g->universities[playerIndex].students[STUDENT_MJ] -= 1;
+        g->universities[playerIndex].students[STUDENT_MTV] -= 1;
 
-        g->universities[currentPlayer].students[STUDENT_BPS] -= 1;
-        g->universities[currentPlayer].students[STUDENT_BQN] -= 1;
-        g->universities[currentPlayer].students[STUDENT_MJ] -= 1;
-        g->universities[currentPlayer].students[STUDENT_MTV] -= 1;
-
-        g->universities[currentPlayer].campuses += 1;
+        g->universities[playerIndex].campuses += 1;
     }
     if (a.actionCode == BUILD_GO8) {
         coordinate coord = coordinateFromPath(g, a.destination);
         changeContents(vertexFromCoordinate(g, coord), currentPlayer + 3);
 
-        g->universities[currentPlayer].students[STUDENT_MJ] -= 2;
-        g->universities[currentPlayer].students[STUDENT_MMONEY] -= 3;
+        g->universities[playerIndex].students[STUDENT_MJ] -= 2;
+        g->universities[playerIndex].students[STUDENT_MMONEY] -= 3;
 
-        g->universities[currentPlayer].campuses -= 1;
-        g->universities[currentPlayer].GO8s += 1;
+        g->universities[playerIndex].campuses -= 1;
+        g->universities[playerIndex].GO8s += 1;
     }
     if (a.actionCode == OBTAIN_ARC) {
         int pathLen = strlen(a.destination);
@@ -197,15 +197,15 @@ void makeAction (Game g, action a) {
         int firstVertexID = IDFromCoordinate(g, firstVertex);
         int secondVertexID = IDFromCoordinate(g, secondVertex);
 
-        g->universities[currentPlayer].students[STUDENT_BPS] -= 1;
-        g->universities[currentPlayer].students[STUDENT_BQN] -= 1;
+        g->universities[playerIndex].students[STUDENT_BPS] -= 1;
+        g->universities[playerIndex].students[STUDENT_BQN] -= 1;
 
         g->edges[firstVertexID][secondVertexID] = currentPlayer;
         g->edges[secondVertexID][firstVertexID] = currentPlayer;
 
         int prevRecordHolder = g->mostARCs;
         int prevRecord = getARCs(g, prevRecordHolder);
-        g->universities[currentPlayer].ARCs += 1;
+        g->universities[playerIndex].ARCs += 1;
         if (getARCs(g, currentPlayer) > prevRecord) {
             g->mostARCs = currentPlayer;
         }
@@ -214,20 +214,20 @@ void makeAction (Game g, action a) {
     if (a.actionCode == OBTAIN_PUBLICATION) {
         int prevRecordHolder = g->mostPublications;
         int prevRecord = getPublications(g, prevRecordHolder);
-        g->universities[currentPlayer].publications++;
+        g->universities[playerIndex].publications++;
         if (getPublications(g, currentPlayer) > prevRecord) {
             g->mostPublications = currentPlayer;
         }
     }
     if (a.actionCode == OBTAIN_IP_PATENT) {
-        g->universities[currentPlayer].IPs++;
+        g->universities[playerIndex].IPs++;
     }
     if (a.actionCode == RETRAIN_STUDENTS) {
         int from = a.disciplineFrom;
         int to = a.disciplineTo;
         int ratio = getExchangeRate(g, currentPlayer, from, to);
-        g->universities[currentPlayer].students[from] -= ratio;
-        g->universities[currentPlayer].students[to] += 1;
+        g->universities[playerIndex].students[from] -= ratio;
+        g->universities[playerIndex].students[to] += 1;
 
     }
 }
@@ -893,8 +893,9 @@ static int getContents(Vertex vertex){
     return vertex->contents;
 }
 
-static int changeContents(Vertex vertex, int newElement){
-    return vertex->contents = newElement;
+static void changeContents(Vertex vertex, int newElement){
+    vertex->contents = newElement;
+    printf("vertex contents %d\n", vertex->contents);
 }
 
 static void freeMap(Vertex*** map){
