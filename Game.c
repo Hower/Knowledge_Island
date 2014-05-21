@@ -710,11 +710,15 @@ int isLegalAction (Game g, action a) {
             }
         }
         else { // action must be OBTAIN_ARC
+            int pathLen = strlen(a.destination);
+            // empty path cannot specify an arc
+            if (pathLen == 0) {
+                return FALSE;
+            }
             if (getARC(g, a.destination) != VACANT_ARC) {
                 return FALSE;
             }
             // obtain the two edges that make up the vertex
-            int pathLen = strlen(a.destination);
             coordinate firstVertex = coordinateFromPath(g, a.destination);
             path destinationMinusOne;
 
