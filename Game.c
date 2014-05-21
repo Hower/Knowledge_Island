@@ -267,11 +267,13 @@ void throwDice (Game g, int diceScore) {
         regionID++;
     }
     if (diceScore == 7) {
+        printf("We rolled a seven!\n");
         player = 0;
         while (player < NUM_UNIS) {
-            g->universities[player].students[STUDENT_THD] += getStudents(g, player, STUDENT_MMONEY);
+            // be very careful here
+            g->universities[player].students[STUDENT_THD] += getStudents(g, player + 1, STUDENT_MMONEY);
             g->universities[player].students[STUDENT_MMONEY] = 0;
-            g->universities[player].students[STUDENT_THD] += getStudents(g, player, STUDENT_MJ);
+            g->universities[player].students[STUDENT_THD] += getStudents(g, player + 1, STUDENT_MJ);
             g->universities[player].students[STUDENT_MJ] = 0;
             player++;
         }
