@@ -723,8 +723,8 @@ int isLegalAction (Game g, action a) {
             // if we don't own any campuses connecting to the edge then we must
             // have an ARC connected to this edge for us to build
             // checks all surrounding edges to see if any of them are owned by us
-            if (getCampus(g, a.destination) != player || getCampus(g, destinationMinusOne) != player ||
-                getCampus(g, a.destination) != player + 3 || getCampus(g, destinationMinusOne) != player +3) {
+            if (getCampus(g, a.destination) != player && getCampus(g, destinationMinusOne) != player &&
+                getCampus(g, a.destination) != player + 3 && getCampus(g, destinationMinusOne) != player +3) {
                 coordinate test1 = {firstVertex.x + 1, firstVertex.y, firstVertex.z};
                 coordinate test2 = {firstVertex.x - 1, firstVertex.y, firstVertex.z};
                 coordinate test3 = {firstVertex.x, firstVertex.y + 1, firstVertex.z};
