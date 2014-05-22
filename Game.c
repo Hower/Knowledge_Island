@@ -28,6 +28,9 @@
 #define TERRA_NULLIS -1
 #define FILE_NAME "vertices.txt"
 
+#define DISCOUNTED_RATIO 2
+#define DEFAULT_RATIO 3
+
 struct _vertex{
     int ID;
     int contents;
@@ -59,40 +62,29 @@ struct _game {
     int currentTurn;
     int **edges;
     Vertex ***map;
-    // number of students that each player owns
     university universities[NUM_UNIS];
     region regions[NUM_REGIONS];
+    int mostPublications;
+    int mostARCs;
 };
 
-Vertex*** makeVertexMap(void);
+static Vertex*** makeVertexMap(void);
 
-int getID(Vertex vertex);
-int getContents(Vertex vertex);
-int changeContents(Vertex vertex, int newElement);
-void freeMap(Vertex*** map);
+static int getID(Vertex vertex);
+static int getContents(Vertex vertex);
+static void changeContents(Vertex vertex, int newElement);
+static void freeMap(Vertex*** map);
 
-int sizeOfVertex(void);
-
-int directionToIndex(char direction);
-coordinate coordinateFromPath(Game g, path requestPath);
-int** makeEdgeMap(Vertex ***vertices);
-int IDFromCoordinate(Game g, coordinate coord);
-Vertex vertexFromCoordinate(Game g, coordinate coord);
-int greatestOfThree (int a, int b, int c);
-int checkEdge(int player, int **edges, int verOne, int verTwo);
-int getCampusFromCoord (Game g, coordinate coord);
-int isLegalCoordinate (Game g, coordinate coord);
-int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
-void spawnStartingCampuses (Game g);
-
-// int main(int argc, char const *argv[]) {
-//     int disciplines[] = DEFAULT_DISCIPLINES;
-//     int dice[] = DEFAULT_DICE;
-//     Game g = newGame (disciplines, dice);
-//     coordinate coord = coordinateFromPath(g, "LRRLRR");
-//     printf("(%d, %d, %d)\n", coord.x, coord.y, coord.z);
-//     return EXIT_SUCCESS;
-// }
+static int directionToIndex(char direction);
+static coordinate coordinateFromPath(Game g, path requestPath);
+static int** makeEdgeMap(Vertex ***vertices);
+static int IDFromCoordinate(Game g, coordinate coord);
+static Vertex vertexFromCoordinate(Game g, coordinate coord);
+// static int checkEdge(int player, int **edges, int verOne, int verTwo);
+static int getCampusFromCoord (Game g, coordinate coord);
+static int isLegalCoordinate (Game g, coordinate coord);
+static int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
+static void spawnStartingCampuses (Game g);
 
 Game newGame (int discipline[], int dice[]) {
     Game g = malloc(sizeof(struct _game));
@@ -103,7 +95,9 @@ Game newGame (int discipline[], int dice[]) {
         g->dice[x] = dice[x];
         x++;
     }
-    g->currentTurn = -1;
+    g->currentTurn = TERRA_NULLIS;
+    g->mostPublications = NO_ONE;
+    g->mostARCs = NO_ONE;
     university startScores;
     startScores.students[STUDENT_THD] = 0;
     startScores.students[STUDENT_BPS] = 3;
@@ -122,14 +116,21 @@ Game newGame (int discipline[], int dice[]) {
         x++;
     }
     g->map = makeVertexMap();
+
+    // load in the regions and their associated vertices
+    char *REGIONS = "0 0 2\n0 0 3\n0 1 3\n1 0 2\n1 1 2\n1 1 3\n0 1 3\n1 1 3\n0 1 4\n1 2 3\n0 2 4\n1 2 4\n0 2 4\n1 2 4\n0 2 5\n1 3 4\n0 3 5\n1 3 5\n1 0 1\n2 0 1\n1 0 2\n2 1 1\n1 1 2\n2 1 2\n1 1 2\n2 1 2\n1 1 3\n2 2 2\n1 2 3\n2 2 3\n1 2 3\n2 2 3\n1 2 4\n2 3 3\n1 3 4\n2 3 4\n1 3 4\n2 3 4\n1 3 5\n2 4 4\n1 4 5\n2 4 5\n2 0 0\n3 0 0\n2 0 1\n3 1 0\n2 1 1\n3 1 1\n2 1 1\n3 1 1\n2 1 2\n3 2 1\n2 2 2\n3 2 2\n2 2 2\n3 2 2\n2 2 3\n3 3 2\n2 3 3\n3 3 3\n2 3 3\n3 3 3\n2 3 4\n3 4 3\n2 4 4\n3 4 4\n2 4 4\n3 4 4\n2 4 5\n3 5 4\n2 5 5\n3 5 5\n3 1 0\n4 1 0\n3 1 1\n4 2 0\n3 2 1\n4 2 1\n3 2 1\n4 2 1\n3 2 2\n4 3 1\n3 3 2\n4 3 2\n3 3 2\n4 3 2\n3 3 3\n4 4 2\n3 4 3\n4 4 3\n3 4 3\n4 4 3\n3 4 4\n4 5 3\n3 5 4\n4 5 4\n4 2 0\n5 2 0\n4 2 1\n5 3 0\n4 3 1\n5 3 1\n4 3 1\n5 3 1\n4 3 2\n5 4 1\n4 4 2\n5 4 2\n4 4 2\n5 4 2\n4 4 3\n5 5 2\n4 5 3\n5 5 3";
+    FILE * pFile;
+    pFile = tmpfile();
+    assert(pFile != NULL);
+    fputs(REGIONS, pFile);
+    rewind(pFile);
+
     x = 0;
     i = 0;
-    // load in the regions and their associated vertices
-    FILE *fin = fopen(REGIONS_TXT, "r");
     while (x < NUM_REGIONS) {
         g->regions[x].ID = x;
         while (i < NUM_VERTICES_IN_A_REGION) {
-            fscanf(fin, "%d %d %d",
+            fscanf(pFile, "%d %d %d",
                 &(g->regions[x].vertices[i].x),
                 &(g->regions[x].vertices[i].y),
                 &(g->regions[x].vertices[i].z));
@@ -144,10 +145,11 @@ Game newGame (int discipline[], int dice[]) {
 }
 
 void disposeGame (Game g) {
+    freeMap(g->map);
     free(g);
 }
 
-void spawnStartingCampuses (Game g) {
+static void spawnStartingCampuses (Game g) {
     changeContents(g->map[2][0][0], CAMPUS_A);
     changeContents(g->map[3][5][5], CAMPUS_A);
     changeContents(g->map[5][5][2], CAMPUS_B);
@@ -155,32 +157,33 @@ void spawnStartingCampuses (Game g) {
     changeContents(g->map[0][3][5], CAMPUS_C);
     changeContents(g->map[5][2][0], CAMPUS_C);
 }
+
 void makeAction (Game g, action a) {
     // arrays are indexed from 0
-    int currentPlayer = getWhoseTurn(g) - 1;
+    int playerIndex = getWhoseTurn(g) - 1;
+    int currentPlayer = getWhoseTurn(g);
     if (a.actionCode == PASS) {
         return;
     }
     if (a.actionCode == BUILD_CAMPUS) {
         coordinate coord = coordinateFromPath(g, a.destination);
         changeContents(vertexFromCoordinate(g, coord), currentPlayer);
+        g->universities[playerIndex].students[STUDENT_BPS] -= 1;
+        g->universities[playerIndex].students[STUDENT_BQN] -= 1;
+        g->universities[playerIndex].students[STUDENT_MJ] -= 1;
+        g->universities[playerIndex].students[STUDENT_MTV] -= 1;
 
-        g->universities[currentPlayer].students[STUDENT_BPS] -= 1;
-        g->universities[currentPlayer].students[STUDENT_BQN] -= 1;
-        g->universities[currentPlayer].students[STUDENT_MJ] -= 1;
-        g->universities[currentPlayer].students[STUDENT_MTV] -= 1;
-
-        g->universities[currentPlayer].campuses += 1;
+        g->universities[playerIndex].campuses += 1;
     }
     if (a.actionCode == BUILD_GO8) {
         coordinate coord = coordinateFromPath(g, a.destination);
         changeContents(vertexFromCoordinate(g, coord), currentPlayer + 3);
 
-        g->universities[currentPlayer].students[STUDENT_MJ] -= 2;
-        g->universities[currentPlayer].students[STUDENT_MMONEY] -= 3;
+        g->universities[playerIndex].students[STUDENT_MJ] -= 2;
+        g->universities[playerIndex].students[STUDENT_MMONEY] -= 3;
 
-        g->universities[currentPlayer].campuses -= 1;
-        g->universities[currentPlayer].GO8s += 1;
+        g->universities[playerIndex].campuses -= 1;
+        g->universities[playerIndex].GO8s += 1;
     }
     if (a.actionCode == OBTAIN_ARC) {
         int pathLen = strlen(a.destination);
@@ -194,25 +197,37 @@ void makeAction (Game g, action a) {
         int firstVertexID = IDFromCoordinate(g, firstVertex);
         int secondVertexID = IDFromCoordinate(g, secondVertex);
 
-        g->universities[currentPlayer].students[STUDENT_BPS] -= 1;
-        g->universities[currentPlayer].students[STUDENT_BQN] -= 1;
+        g->universities[playerIndex].students[STUDENT_BPS] -= 1;
+        g->universities[playerIndex].students[STUDENT_BQN] -= 1;
 
         g->edges[firstVertexID][secondVertexID] = currentPlayer;
         g->edges[secondVertexID][firstVertexID] = currentPlayer;
-        g->universities[currentPlayer].ARCs += 1;
+
+        int prevRecordHolder = g->mostARCs;
+        int prevRecord = getARCs(g, prevRecordHolder);
+        g->universities[playerIndex].ARCs += 1;
+        if (getARCs(g, currentPlayer) > prevRecord) {
+            g->mostARCs = currentPlayer;
+        }
+
     }
     if (a.actionCode == OBTAIN_PUBLICATION) {
-        g->universities[currentPlayer].publications++;
+        int prevRecordHolder = g->mostPublications;
+        int prevRecord = getPublications(g, prevRecordHolder);
+        g->universities[playerIndex].publications++;
+        if (getPublications(g, currentPlayer) > prevRecord) {
+            g->mostPublications = currentPlayer;
+        }
     }
     if (a.actionCode == OBTAIN_IP_PATENT) {
-        g->universities[currentPlayer].IPs++;
+        g->universities[playerIndex].IPs++;
     }
     if (a.actionCode == RETRAIN_STUDENTS) {
         int from = a.disciplineFrom;
         int to = a.disciplineTo;
         int ratio = getExchangeRate(g, currentPlayer, from, to);
-        g->universities[currentPlayer].students[from] -= ratio;
-        g->universities[currentPlayer].students[to] += 1;
+        g->universities[playerIndex].students[from] -= ratio;
+        g->universities[playerIndex].students[to] += 1;
 
     }
 }
@@ -254,9 +269,10 @@ void throwDice (Game g, int diceScore) {
     if (diceScore == 7) {
         player = 0;
         while (player < NUM_UNIS) {
-            g->universities[player].students[STUDENT_THD] += getStudents(g, player, STUDENT_MMONEY);
+            // be very careful here
+            g->universities[player].students[STUDENT_THD] += getStudents(g, player + 1, STUDENT_MMONEY);
             g->universities[player].students[STUDENT_MMONEY] = 0;
-            g->universities[player].students[STUDENT_THD] += getStudents(g, player, STUDENT_MJ);
+            g->universities[player].students[STUDENT_THD] += getStudents(g, player + 1, STUDENT_MJ);
             g->universities[player].students[STUDENT_MJ] = 0;
             player++;
         }
@@ -272,42 +288,11 @@ int getDiceValue (Game g, int regionID) {
 
 // need to account for ties
 int getMostARCs (Game g) {
-    int a = g->universities[UNI_A].ARCs;
-    int b = g->universities[UNI_B].ARCs;
-    int c = g->universities[UNI_C].ARCs;
-    return greatestOfThree(a, b, c);
+    return g->mostARCs;
 }
 
-// need to account for ties
 int getMostPublications (Game g) {
-    int a = g->universities[UNI_A].publications;
-    int b = g->universities[UNI_B].publications;
-    int c = g->universities[UNI_C].publications;
-    return greatestOfThree(a, b, c);
-}
-
-int greatestOfThree (int a, int b, int c) {
-    int leading = NO_ONE;
-
-    if (a > b) {
-        if (a > c) {
-            leading = UNI_A;
-        }
-        else {
-            leading = UNI_C;
-        }
-    }
-    else if (b > c) {
-        leading = UNI_B;
-    }
-    else {
-        leading = UNI_C;
-    }
-
-    if (a == 0 && b == 0 && c == 0) {
-        leading = NO_ONE;
-    }
-    return leading;
+    return g->mostPublications;
 }
 
 int getTurnNumber (Game g) {
@@ -331,7 +316,7 @@ int getCampus (Game g, path pathToVertex) {
     return getContents(vertex);
 }
 
-int getCampusFromCoord (Game g, coordinate coord) {
+static int getCampusFromCoord (Game g, coordinate coord) {
     Vertex vertex = vertexFromCoordinate(g, coord);
     return getContents(vertex);
 }
@@ -353,7 +338,11 @@ int getKPIpoints (Game g, int player) {
 }
 
 int getARCs (Game g, int player) {
-    return g->universities[player - 1].ARCs;
+    int count = 0;
+    if (player != NO_ONE) {
+        count = g->universities[player - 1].ARCs;
+    }
+    return count;
 }
 
 int getARC (Game g, path pathToEdge) {
@@ -372,26 +361,47 @@ int getARC (Game g, path pathToEdge) {
 }
 
 int getGO8s (Game g, int player) {
-    return g->universities[player - 1].GO8s;
+    int count = 0;
+    if (player != NO_ONE) {
+        count = g->universities[player - 1].GO8s;
+    }
+    return count;
 }
 
 int getCampuses (Game g, int player) {
-    return g->universities[player - 1].campuses;
+    int count = 0;
+    if (player != NO_ONE) {
+        count = g->universities[player - 1].campuses;
+    }
+    return count;
 }
 
 int getIPs (Game g, int player) {
-    return g->universities[player - 1].IPs;
+    int count = 0;
+    if (player != NO_ONE) {
+        count = g->universities[player - 1].IPs;
+    }
+    return count;
 }
 
 int getPublications (Game g, int player) {
-    return g->universities[player - 1].publications;
+    int count = 0;
+    if (player != NO_ONE) {
+        count = g->universities[player - 1].publications;
+    }
+    return count;
 }
 
 int getStudents (Game g, int player, int discipline) {
-    return g->universities[player - 1].students[discipline];
+    int count = 0;
+    if (player != NO_ONE) {
+        count = g->universities[player - 1].students[discipline];
+    }
+    return count;
 }
 
-int directionToIndex(char direction) {
+// returns -1 if requested direction is not 'L' 'B' or 'R'
+static int directionToIndex(char direction) {
     int returnValue;
     if (direction == 'L') {
         returnValue = 0;
@@ -408,8 +418,8 @@ int directionToIndex(char direction) {
     return returnValue;
 }
 
-// also does all the checking for whether a path is valid or not
-coordinate coordinateFromPath(Game g, path requestPath) {
+// if a path is invalid, the returned x coordinate will be -1
+static coordinate coordinateFromPath(Game g, path requestPath) {
     int curOrientation = DOWN_RIGHT;
     char curDirection;
     coordinate coord;
@@ -455,9 +465,7 @@ coordinate coordinateFromPath(Game g, path requestPath) {
         }
     };
     int updateCoord, index;
-    int x, y, z;
     int update;
-    Vertex curVertex;
     while (count < pathLen) {
         curDirection = requestPath[count];
         index = directionToIndex(curDirection);
@@ -486,26 +494,8 @@ coordinate coordinateFromPath(Game g, path requestPath) {
         else {
             coord.z += update;
         }
-        // check that the coordinate we are on exists
-        x = coord.x;
-        y = coord.y;
-        z = coord.z;
-        printf("%d %d %d\n", x, y, z);
-
-        // path is out of bounds or doesn't exist
-        if (
-              (x >= MAX_COORDINATE)
-           || (y >= MAX_COORDINATE)
-           || (z >= MAX_COORDINATE)
-           || (x < 0)
-           || (y < 0)
-           || (z < 0)) {
-            coord.x = -1;
-            return coord;
-        }
-
-        curVertex = g->map[x][y][z];
-        if (getID(curVertex) == -1) {
+        // check that the coordinate we are on is legal
+        if (isLegalCoordinate(g, coord) == FALSE) {
             coord.x = -1;
             return coord;
         }
@@ -516,18 +506,15 @@ coordinate coordinateFromPath(Game g, path requestPath) {
     return coord;
 }
 
-int IDFromCoordinate(Game g, coordinate coord) {
+static int IDFromCoordinate(Game g, coordinate coord) {
     return getID(vertexFromCoordinate(g, coord));
 }
 
-Vertex vertexFromCoordinate(Game g, coordinate coord) {
+static Vertex vertexFromCoordinate(Game g, coordinate coord) {
     return g->map[coord.x][coord.y][coord.z];
 }
 
-// int getExchangeRate (Game g, int player, int disciplineFrom, int disciplineTo) {
-
-// }
-int** makeEdgeMap(Vertex ***vertices){
+static int** makeEdgeMap(Vertex ***vertices){
     int **first = malloc(sizeof(int*) * NUM_VERTICES);
 
     int d = 0;
@@ -615,33 +602,27 @@ int** makeEdgeMap(Vertex ***vertices){
     return first;
 }
 
-int checkEdge(int player, int **edges, int verOne, int verTwo){
-    int valid = 0;
+// static int checkEdge(int player, int **edges, int verOne, int verTwo){
+//     int valid = 0;
 
-    //loops over the array that has one vertex in common with the one
-    //in question
-    int count = 0;
-    while(count < MAX_COORDINATE){
-        if(edges[verOne][count] == player){
-            valid = 1;
-        }
-        if(edges[verTwo][count] == player){
-            valid = 1;
-        }
-        count++;
-    }
-    return valid;
-}
-
-// training centers
-// A1 (2, 0, 1) (1, 0, 1) STUDENT_MTV
-// A2 (3, 1, 0) (4, 1, 0) STUDENT_MMONEY
-// B1 (5, 4, 1) (5, 4, 2) STUDENT_BQN
-// B2 (4, 5, 3) (4, 5, 4) STUDENT_MJ
-// C1 (1, 4, 5) (1, 3, 5) STUDENT_BPS
+//     //loops over the array that has one vertex in common with the one
+//     //in question
+//     int count = 0;
+//     while(count < MAX_COORDINATE){
+//         if(edges[verOne][count] == player){
+//             valid = 1;
+//         }
+//         if(edges[verTwo][count] == player){
+//             valid = 1;
+//         }
+//         count++;
+//     }
+//     return valid;
+// }
 
 int getExchangeRate (Game g, int player,
                      int disciplineFrom, int disciplineTo) {
+    // coordinates of all the training centers
     coordinate MTV1    = {2, 0, 1};
     coordinate MTV2    = {1, 0, 1};
     coordinate MMONEY1 = {3, 1, 0};
@@ -658,7 +639,7 @@ int getExchangeRate (Game g, int player,
             getCampusFromCoord(g, MTV1) == player + 3 ||
             getCampusFromCoord(g, MTV2) == player ||
             getCampusFromCoord(g, MTV2) == player + 3) {
-            return 2;
+            return DISCOUNTED_RATIO;
         }
     }
     else if (disciplineFrom == STUDENT_MMONEY) {
@@ -666,7 +647,7 @@ int getExchangeRate (Game g, int player,
             getCampusFromCoord(g, MMONEY1) == player + 3 ||
             getCampusFromCoord(g, MMONEY2) == player ||
             getCampusFromCoord(g, MMONEY2) == player + 3) {
-            return 2;
+            return DISCOUNTED_RATIO;
         }
     }
     else if (disciplineFrom == STUDENT_BQN) {
@@ -674,7 +655,7 @@ int getExchangeRate (Game g, int player,
             getCampusFromCoord(g, BQN1) == player + 3 ||
             getCampusFromCoord(g, BQN2) == player ||
             getCampusFromCoord(g, BQN2) == player + 3) {
-            return 2;
+            return DISCOUNTED_RATIO;
         }
     }
     else if (disciplineFrom == STUDENT_MJ) {
@@ -682,7 +663,7 @@ int getExchangeRate (Game g, int player,
             getCampusFromCoord(g, MJ1) == player + 3 ||
             getCampusFromCoord(g, MJ2) == player ||
             getCampusFromCoord(g, MJ2) == player + 3) {
-            return 2;
+            return DISCOUNTED_RATIO;
         }
     }
     else if (disciplineFrom == STUDENT_BPS) {
@@ -690,10 +671,10 @@ int getExchangeRate (Game g, int player,
             getCampusFromCoord(g, BPS1) == player + 3 ||
             getCampusFromCoord(g, BPS2) == player ||
             getCampusFromCoord(g, BPS2) == player + 3) {
-            return 2;
+            return DISCOUNTED_RATIO;
         }
     }
-    return 3;
+    return DEFAULT_RATIO;
 }
 
 int isLegalAction (Game g, action a) {
@@ -719,7 +700,12 @@ int isLegalAction (Game g, action a) {
         if (coord.x == -1) {
             return FALSE;
         }
-        if (a.actionCode == BUILD_CAMPUS || a.actionCode == BUILD_GO8) {
+        if (a.actionCode == BUILD_GO8) {
+            if (getCampus(g, a.destination) != player) {
+                return FALSE;
+            }
+        }
+        else if (a.actionCode == BUILD_CAMPUS) {
             // test they're building on an empty vertex
             if (getCampusFromCoord(g, coord) != VACANT_VERTEX) {
                 return FALSE;
@@ -751,24 +737,28 @@ int isLegalAction (Game g, action a) {
                 return FALSE;
             }
         }
-        else { // action must be OBTAIN_ARC
+        else if (a.actionCode == OBTAIN_ARC) {
+            int pathLen = strlen(a.destination);
+            // empty path cannot specify an arc
+            if (pathLen == 0) {
+                return FALSE;
+            }
             if (getARC(g, a.destination) != VACANT_ARC) {
                 return FALSE;
             }
             // obtain the two edges that make up the vertex
-            int pathLen = strlen(a.destination);
             coordinate firstVertex = coordinateFromPath(g, a.destination);
             path destinationMinusOne;
 
             strncpy(destinationMinusOne, a.destination, pathLen - 1);
             destinationMinusOne[pathLen - 1] = '\0';
-
             coordinate secondVertex = coordinateFromPath(g, destinationMinusOne);
+
             // if we don't own any campuses connecting to the edge then we must
             // have an ARC connected to this edge for us to build
             // checks all surrounding edges to see if any of them are owned by us
-            if (getCampus(g, a.destination) != player || getCampus(g, destinationMinusOne) != player ||
-                getCampus(g, a.destination) != player + 3 || getCampus(g, destinationMinusOne) != player +3) {
+            if (getCampus(g, a.destination) != player && getCampus(g, destinationMinusOne) != player &&
+                getCampus(g, a.destination) != player + 3 && getCampus(g, destinationMinusOne) != player +3) {
                 coordinate test1 = {firstVertex.x + 1, firstVertex.y, firstVertex.z};
                 coordinate test2 = {firstVertex.x - 1, firstVertex.y, firstVertex.z};
                 coordinate test3 = {firstVertex.x, firstVertex.y + 1, firstVertex.z};
@@ -783,14 +773,27 @@ int isLegalAction (Game g, action a) {
                 coordinate test11 = {secondVertex.x, secondVertex.y, secondVertex.z + 1};
                 coordinate test12 = {secondVertex.x, secondVertex.y, secondVertex.z - 1};
 
-                coordinate testCoords[NUM_DIRECTIONS_FROM_ANY_VERTEX * 2] =
-                           {test1, test2, test3, test4, test5, test6, test7, test8, test9,
-                            test10, test11, test12};
+                coordinate testCoords1[NUM_DIRECTIONS_FROM_ANY_VERTEX] =
+                           {test1, test2, test3, test4, test5, test6};
+                coordinate testCoords2[NUM_DIRECTIONS_FROM_ANY_VERTEX] =
+                           {test7, test8, test9, test10, test11, test12};
                 x = 0;
                 int arcOwned = FALSE;
-                while (x < NUM_DIRECTIONS_FROM_ANY_VERTEX * 2) {
-                    if (isLegalCoordinate(g, testCoords[x]) == TRUE) {
-                        if (getARCFromCoords(g, coord, testCoords[x]) == player) {
+                // test the vertices adjacent to the first vertex which makes up the edge
+                while (x < NUM_DIRECTIONS_FROM_ANY_VERTEX) {
+                    if (isLegalCoordinate(g, testCoords1[x]) == TRUE) {
+                        if (getARCFromCoords(g, firstVertex, testCoords1[x]) == player) {
+                            arcOwned = TRUE;
+                            break;
+                        }
+                    }
+                    x++;
+                }
+                x = 0;
+                // do the same with the second vertex
+                while (x < NUM_DIRECTIONS_FROM_ANY_VERTEX) {
+                    if (isLegalCoordinate(g, testCoords2[x]) == TRUE) {
+                        if (getARCFromCoords(g, secondVertex, testCoords2[x]) == player) {
                             arcOwned = TRUE;
                             break;
                         }
@@ -847,15 +850,14 @@ int isLegalAction (Game g, action a) {
             return FALSE;
         }
     }
-
     return TRUE;
 }
 
-int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2) {
+static int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2) {
     return g->edges[IDFromCoordinate(g, vertex1)][IDFromCoordinate(g, vertex2)];
 }
 
-int isLegalCoordinate (Game g, coordinate coord) {
+static int isLegalCoordinate (Game g, coordinate coord) {
     int x = coord.x;
     int y = coord.y;
     int z = coord.z;
@@ -875,9 +877,14 @@ int isLegalCoordinate (Game g, coordinate coord) {
     return TRUE;
 }
 
-Vertex*** makeVertexMap(void){
+static Vertex*** makeVertexMap(void){
+    char *VERTICES = "2 0 0\n3 0 0\n1 0 1\n2 0 1\n3 1 0\n4 1 0\n0 0 2\n1 0 2\n2 1 1\n3 1 1\n4 2 0\n5 2 0\n0 0 3\n1 1 2\n2 1 2\n3 2 1\n4 2 1\n5 3 0\n0 1 3\n1 1 3\n2 2 2\n3 2 2\n4 3 1\n5 3 1\n0 1 4\n1 2 3\n2 2 3\n3 3 2\n4 3 2\n5 4 1\n0 2 4\n1 2 4\n2 3 3\n3 3 3\n4 4 2\n5 4 2\n0 2 5\n1 3 4\n2 3 4\n3 4 3\n4 4 3\n5 5 2\n0 3 5\n1 3 5\n2 4 4\n3 4 4\n4 5 3\n5 5 3\n1 4 5\n2 4 5\n3 5 4\n4 5 4\n2 5 5\n3 5 5";
+    FILE * fin;
+    fin = tmpfile();
+    assert(fin != NULL);
+    fputs(VERTICES, fin);
+    rewind(fin);
 
-    FILE *fin = fopen(FILE_NAME, "r");
     Vertex ***first = malloc(sizeof(Vertex**) * MAX_COORDINATE);
 
     // Creates blank map
@@ -911,7 +918,6 @@ Vertex*** makeVertexMap(void){
     int count = 0;
     while (count < NUM_VERTICES){
         // loads valid vertices
-
         fscanf(fin, "%d %d %d", &x, &y, &z);
         first[x][y][z]->ID = count;
         count++;
@@ -919,27 +925,25 @@ Vertex*** makeVertexMap(void){
     return first;
 }
 
-int getID(Vertex vertex){
+static int getID(Vertex vertex){
     return vertex->ID;
 }
 
-int getContents(Vertex vertex){
+static int getContents(Vertex vertex){
     return vertex->contents;
 }
 
-int changeContents(Vertex vertex, int newElement){
-    return vertex->contents = newElement;
+static void changeContents(Vertex vertex, int newElement){
+    vertex->contents = newElement;
 }
 
-void freeMap(Vertex*** map){
-
+static void freeMap(Vertex*** map){
     int countA = 0;
 
     while (countA < MAX_COORDINATE){
 
         int countB = 0;
         while (countB < MAX_COORDINATE){
-
 
             int countC = 0;
             while (countC < MAX_COORDINATE){
@@ -954,8 +958,4 @@ void freeMap(Vertex*** map){
     }
     free(map);
     return;
-}
-
-int sizeOfVertex(void){
-    return sizeof(struct _vertex);
 }
