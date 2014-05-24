@@ -80,7 +80,6 @@ static coordinate coordinateFromPath(Game g, path requestPath);
 static int** makeEdgeMap(Vertex ***vertices);
 static int IDFromCoordinate(Game g, coordinate coord);
 static Vertex vertexFromCoordinate(Game g, coordinate coord);
-// static int checkEdge(int player, int **edges, int verOne, int verTwo);
 static int getCampusFromCoord (Game g, coordinate coord);
 static int isLegalCoordinate (Game g, coordinate coord);
 static int getARCFromCoords (Game g, coordinate vertex1, coordinate vertex2);
@@ -606,24 +605,6 @@ static int** makeEdgeMap(Vertex ***vertices){
 
     return first;
 }
-
-// static int checkEdge(int player, int **edges, int verOne, int verTwo){
-//     int valid = 0;
-
-//     //loops over the array that has one vertex in common with the one
-//     //in question
-//     int count = 0;
-//     while(count < MAX_COORDINATE){
-//         if(edges[verOne][count] == player){
-//             valid = 1;
-//         }
-//         if(edges[verTwo][count] == player){
-//             valid = 1;
-//         }
-//         count++;
-//     }
-//     return valid;
-// }
 
 int getExchangeRate (Game g, int player,
                      int disciplineFrom, int disciplineTo) {
