@@ -116,7 +116,6 @@ Game newGame (int discipline[], int dice[]) {
         x++;
     }
     g->map = makeVertexMap();
-
     // load in the regions and their associated vertices
     char *REGIONS = "0 0 2\n0 0 3\n0 1 3\n1 0 2\n1 1 2\n1 1 3\n0 1 3\n1 1 3\n0 1 4\n1 2 3\n0 2 4\n1 2 4\n0 2 4\n1 2 4\n0 2 5\n1 3 4\n0 3 5\n1 3 5\n1 0 1\n2 0 1\n1 0 2\n2 1 1\n1 1 2\n2 1 2\n1 1 2\n2 1 2\n1 1 3\n2 2 2\n1 2 3\n2 2 3\n1 2 3\n2 2 3\n1 2 4\n2 3 3\n1 3 4\n2 3 4\n1 3 4\n2 3 4\n1 3 5\n2 4 4\n1 4 5\n2 4 5\n2 0 0\n3 0 0\n2 0 1\n3 1 0\n2 1 1\n3 1 1\n2 1 1\n3 1 1\n2 1 2\n3 2 1\n2 2 2\n3 2 2\n2 2 2\n3 2 2\n2 2 3\n3 3 2\n2 3 3\n3 3 3\n2 3 3\n3 3 3\n2 3 4\n3 4 3\n2 4 4\n3 4 4\n2 4 4\n3 4 4\n2 4 5\n3 5 4\n2 5 5\n3 5 5\n3 1 0\n4 1 0\n3 1 1\n4 2 0\n3 2 1\n4 2 1\n3 2 1\n4 2 1\n3 2 2\n4 3 1\n3 3 2\n4 3 2\n3 3 2\n4 3 2\n3 3 3\n4 4 2\n3 4 3\n4 4 3\n3 4 3\n4 4 3\n3 4 4\n4 5 3\n3 5 4\n4 5 4\n4 2 0\n5 2 0\n4 2 1\n5 3 0\n4 3 1\n5 3 1\n4 3 1\n5 3 1\n4 3 2\n5 4 1\n4 4 2\n5 4 2\n4 4 2\n5 4 2\n4 4 3\n5 5 2\n4 5 3\n5 5 3";
     FILE * pFile;
@@ -210,6 +209,12 @@ void makeAction (Game g, action a) {
             g->mostARCs = currentPlayer;
         }
 
+    }
+    if (a.actionCode == OBTAIN_PUBLICATION ||
+        a.actionCode == OBTAIN_IP_PATENT) {
+        g->universities[playerIndex].students[STUDENT_MJ] -= 1;
+        g->universities[playerIndex].students[STUDENT_MTV] -= 1;
+        g->universities[playerIndex].students[STUDENT_MMONEY] -= 1;
     }
     if (a.actionCode == OBTAIN_PUBLICATION) {
         int prevRecordHolder = g->mostPublications;
@@ -825,13 +830,13 @@ int isLegalAction (Game g, action a) {
         if (getStudents(g, player, STUDENT_BPS) < 1 ||
             getStudents(g, player, STUDENT_BQN) < 1 ||
             getStudents(g, player, STUDENT_MJ) < 1 ||
-            getStudents(g, player, STUDENT_MTV < 1)) {
+            getStudents(g, player, STUDENT_MTV) < 1) {
             return FALSE;
         }
     }
     if (a.actionCode == BUILD_GO8) {
         if (getStudents(g, player, STUDENT_MJ) < 2 ||
-            getStudents(g, player, STUDENT_MMONEY < 3)) {
+            getStudents(g, player, STUDENT_MMONEY) < 3) {
             return FALSE;
         }
         int totalGO8s = 0;
@@ -847,6 +852,13 @@ int isLegalAction (Game g, action a) {
     if (a.actionCode == OBTAIN_ARC) {
         if (getStudents(g, player, STUDENT_BPS) < 1 ||
             getStudents(g, player, STUDENT_BQN) < 1) {
+            return FALSE;
+        }
+    }
+    if (a.actionCode == START_SPINOFF) {
+        if (getStudents(g, player, STUDENT_MJ) < 1 ||
+            getStudents(g, player, STUDENT_MTV) < 1 ||
+            getStudents(g, player, STUDENT_MMONEY) < 1) {
             return FALSE;
         }
     }
