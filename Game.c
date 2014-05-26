@@ -338,6 +338,9 @@ int getKPIpoints (Game g, int player) {
     if (player == getMostPublications(g)) {
         KPIpoints += 10;
     }
+    if (player == NO_ONE) {
+        KPIpoints = 0;
+    }
     return KPIpoints;
 }
 
