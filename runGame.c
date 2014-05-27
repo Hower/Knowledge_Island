@@ -31,12 +31,12 @@ int main (int argc, char *argv[]) {
 		scanf("%d", &move);
 		assert(move >= 0 && move <= 4) || (move = 7);
 		
-	while (move != PASS) {
+		while (move != PASS) {
 		assert(isLegal(g, move));
 		
 			if (move.actionCode == START_SPINOFF) {
 				diceValue = rollDice();
-				Decide			
+				//Decide
 			}
 		makeAction(g, move);
 		}
