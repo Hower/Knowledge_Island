@@ -1,5 +1,3 @@
-// Other people
-// 30/04/14
 // Tests Game.c (extensively)
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,12 +15,6 @@ void test7(void);
 void test8(void);
 void test9 (void);
 void test10(void);
-void test11(void);
-void test12(void);
-void test13(void);
-void test14(void);
-void test15(void);
-void test16(void);
 
 int main(int argc, char const *argv[]) {
     // extensive testing here!
@@ -36,13 +28,7 @@ int main(int argc, char const *argv[]) {
     test8();
     test9 ();
     test10();
-    test11();
-    test12();
-    test13();
-    test14();
-    test15();
-    test16();
-
+    
     printf("All tests passed, you are Awesome!\n");
     return EXIT_SUCCESS;
 }
@@ -236,34 +222,4 @@ void test10 (void) {
     a.destination[PATH_LIMIT - 1] = 0;
     a.disciplineFrom = 4, a.disciplineTo = 3;
     assert(isLegalAction(g, a) == 1);
-}
-
-void test11 (void) {
-    printf("\n\n\n\n");
-    return;
-}
-
-void test12 (void) {
-    printf("\n\n\n\n");
-    return;
-}
-
-void test13 (void) {
-    printf("\n\n\n\n");
-    return;
-}
-
-void test14 (void) {
-    printf("\n\n\n\n");
-    return;
-}
-
-void test15 (void) {
-    printf("\n\n\n\n");
-    return;
-}
-
-void test16 (void) {
-    printf("\n\n\n\n");
-    return;
 }
